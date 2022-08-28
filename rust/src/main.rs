@@ -21,6 +21,7 @@ impl<'a> Iterator for WordIter<'a> {
         let end;
         if self.input.starts_with('"') {
             start = 1;
+            // find closing "
             end = self.input[1..].find('"').map(|x| x + 1);
         } else {
             start = 0;
@@ -29,6 +30,7 @@ impl<'a> Iterator for WordIter<'a> {
 
         let end = end.unwrap_or(self.input.len());
         let result = &self.input[start..end];
+        // if start is > 0, skip just as much at the end
         self.input = &self.input[start + end..];
         self.input = self.input.trim_start();
 
@@ -50,9 +52,13 @@ fn cd(mut args: WordIter) {
 }
 
 fn echo(args: WordIter) {
+    // let's lock the stdout buffer
+    // to avoid multiple implicit mutex locks
     let mut stdout = stdout().lock();
 
     for arg in args {
+        // ignoring the error for simplicity
+        // (and there's not much we can do)
         let _ = stdout.write_all(arg.as_bytes());
         let _ = stdout.write_all(b" ");
     }
@@ -74,6 +80,7 @@ fn exit(mut args: WordIter) {
     std::process::exit(code);
 }
 
+/// handle builtin command or spawn process
 fn handle_cmd(cmd: &str, args: WordIter) {
     match cmd {
         "cd" => cd(args),
@@ -129,6 +136,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let mut stdout = stdout().lock();
         let current_dir = std::env::current_dir()?;
+        // construct a prompt from the last two segments
+        // of the current working directory
         let part1 = current_dir.parent();
         let part2 = current_dir.file_name().unwrap();
         if let Some(part1) = part1 {
@@ -137,6 +146,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         write!(stdout, "{} $ ", part2.to_str().unwrap())?;
         stdout.flush()?;
+        // release lock
         drop(stdout);
 
         buf.clear();
