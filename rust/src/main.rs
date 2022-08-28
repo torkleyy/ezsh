@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn escaped() {
+    fn quoted() {
         assert_eq!(iter("\"\""), vec![""]);
         assert_eq!(iter("\"asdf\""), vec!["asdf"]);
         assert_eq!(iter("asdf \"foo\""), vec!["asdf", "foo"]);
